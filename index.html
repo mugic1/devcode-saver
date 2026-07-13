@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevCode Saver & Editor</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0ea5e9">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <style>
+        :root {
+            --bg-main: #0b0f19;
+            --bg-card: #151d30;
+            --border: #223150;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #0ea5e9;
+            --accent-hover: #0284c7;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            padding: 16px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto 20px auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(to right, #0ea5e9, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-pwa {
+            background: #1e293b;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 14px;
+            font-size: 13px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: none;
+        }
+
+        .app-container {
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            flex: 1;
+        }
+
+        @media (min-width: 1024px) {
+            .app-container {
+                grid-template-columns: 2fr 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+        }
+
+        .editor-header {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        @media (min-width: 640px) {
+            .editor-header {
+                grid-template-columns: 2fr 1fr;
+            }
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .hint {
+            text-transform: none;
+            font-weight: normal;
+            color: var(--accent);
+            font-size: 11px;
+        }
+
+        input[type="text"], select, textarea {
+            background: #090d16;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-main);
+            padding: 12px 16px;
+            font-size: 15px;
+            outline: none;
+            width: 100%;
+        }
+
+        input[type="text"]:focus, select:focus, textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
+        }
+
+        textarea {
+            flex: 1;
+            min-height: 380px;
+            font-family: 'Fira Code', 'JetBrains Mono', monospace;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            resize: vertical;
+        }
+
+        .workspace-actions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        @media (min-width: 640px) {
+            .workspace-actions {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        button:active { transform: scale(0.98); }
+
+        .btn-main { background: var(--accent); color: #fff; }
+        .btn-main:hover { background: var(--accent-hover); }
+        
+        .btn-upload-trigger { background: #1e293b; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-upload-trigger:hover { background: #27354d; }
+
+        .btn-clear { background: #0f172a; border: 1px solid var(--border); color: #cbd5e1; }
+        .btn-clear:hover { background: #1e293b; color: #fff; }
+
+        .sidebar-actions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        @media (min-width: 640px) and (max-width: 1023px) {
+            .sidebar-actions { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        .btn-sec { background: #1e293b; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-sec:hover { background: #2d3d5a; }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-main);
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 380px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: #090d16;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+
+        .history-info { 
+            overflow: hidden; 
+            padding-right: 10px; 
+            cursor: pointer; 
+            flex: 1;
+        }
+        
+        .history-info:hover .history-name {
+            color: var(--accent);
+        }
+
+        .history-name {
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: color 0.2s;
+        }
+
+        .history-tag {
+            font-size: 10px;
+            color: var(--accent);
+            background: rgba(14, 165, 233, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+        }
+
+        .history-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .history-controls { display: flex; gap: 6px; }
+
+        .btn-icon { padding: 8px; border-radius: 8px; width: auto; }
+        .btn-dl-item { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .btn-dl-item:hover { background: var(--success); color: #fff; }
+        .btn-del-item { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+        .btn-del-item:hover { background: var(--danger); color: #fff; }
+
+        .empty-state { text-align: center; color: var(--text-muted); font-size: 13px; padding: 20px 0; }
+
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1e293b;
+            border: 1px solid var(--border);
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-size: 14px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 9999;
+        }
+
+        #toast.show { transform: translateX(-50%) translateY(0); }
+        .hidden-input { display: none; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>DevCode Saver</h1>
+        <button id="installApp" class="btn-pwa">📲 Install App</button>
+    </header>
+
+    <div class="app-container">
+        <!-- Main Workspace Editor -->
+        <div class="panel">
+            <div class="editor-header">
+                <div class="field-group">
+                    <label>File Name</label>
+                    <input type="text" id="filename" placeholder="Enter filename" value="my_code">
+                </div>
+                <div class="field-group">
+                    <label>Extension / Language</label>
+                    <select id="extension"></select>
+                </div>
+            </div>
+            <div class="field-group" style="flex: 1;">
+                <label>Code Canvas <span class="hint">Tip: Type 'main' or '!' + Tab/Enter</span></label>
+                <textarea id="codeEditor" placeholder="// Type, paste, or upload code here..."></textarea>
+            </div>
+            
+            <div class="workspace-actions">
+                <button class="btn-clear" onclick="clearWorkspace()">➕ New File</button>
+                
+                <button class="btn-upload-trigger" onclick="triggerFileToEdit()">📂 Open File to Edit</button>
+                <input type="file" id="editFileInput" class="hidden-input" onchange="loadFileToEdit(event)">
+                
+                <button class="btn-main" onclick="downloadFile()">⚡ Download Code File</button>
+            </div>
+        </div>
+
+        <!-- Sidebar Panel Tools -->
+        <div class="panel">
+            <div class="section-title">Options & Portability</div>
+            <div class="sidebar-actions">
+                <button class="btn-sec" onclick="createSnapshot()">📸 Save Snapshot</button>
+                <button class="btn-sec" onclick="exportBackup()">📤 Export Logs</button>
+                <button class="btn-sec" onclick="triggerImport()">📥 Import Backup</button>
+                <input type="file" id="fileInput" class="hidden-input" accept=".json" onchange="importBackup(event)">
+            </div>
+
+            <div class="section-title">History Logs</div>
+            <div class="history-list" id="historyList"></div>
+        </div>
+    </div>
+
+    <div id="toast"></div>
+
+<script>
+    const extensions = {
+        "Web Ecosystem": { ".html": "HTML5", ".css": "CSS3", ".js": "JavaScript", ".ts": "TypeScript", ".jsx": "React JS", ".tsx": "React TS", ".php": "PHP" },
+        "Backend & Systems": { ".py": "Python", ".java": "Java", ".cpp": "C++", ".c": "C Language", ".cs": "C#", ".go": "Golang", ".rs": "Rust", ".rb": "Ruby" },
+        "Mobile Platforms": { ".kt": "Kotlin", ".swift": "Swift", ".dart": "Flutter/Dart" },
+        "Data & Structs": { ".json": "JSON Data", ".yaml": "YAML Config", ".xml": "XML", ".csv": "CSV Data", ".sql": "SQL Query" },
+        "Shell & Docs": { ".txt": "Plain Text", ".md": "Markdown", ".sh": "Bash Script", ".bat": "Windows Batch" }
+    };
+
+    let historyData = [];
+
+    window.onload = function() {
+        populateDropdown();
+        loadHistory();
+        setupBoilerplateEngine();
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
+        }
+    };
+
+    function populateDropdown() {
+        const select = document.getElementById('extension');
+        select.innerHTML = "";
+        for (const [group, items] of Object.entries(extensions)) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = group;
+            for (const [val, name] of Object.entries(items)) {
+                const opt = document.createElement('option');
+                opt.value = val;
+                opt.textContent = `${val} (${name})`;
+                optgroup.appendChild(opt);
+            }
+            select.appendChild(optgroup);
+        }
+        select.value = ".html";
+    }
+
+    function showToast(msg, isError = false) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.style.borderLeft = `4px solid ${isError ? 'var(--danger)' : 'var(--success)'}`;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function clearWorkspace() {
+        const code = document.getElementById('codeEditor').value;
+        if (code.trim()) {
+            if (!confirm("Workspace me code already maujood hai. Kya aap ise hatakar naya canvas shuru karna chahte hain?")) {
+                return;
+            }
+        }
+        document.getElementById('codeEditor').value = "";
+        document.getElementById('filename').value = "my_code";
+        document.getElementById('extension').value = ".html";
+        showToast("New clean workspace ready!");
+    }
+
+    // Completely bulletproof Snippet Detection via Contextual Cursor Tracking
+    function setupBoilerplateEngine() {
+        const editor = document.getElementById('codeEditor');
+        const select = document.getElementById('extension');
+        
+        editor.addEventListener('keydown', function(e) {
+            const isEnter = (e.key === 'Enter' || e.keyCode === 13);
+            const isTab = (e.key === 'Tab' || e.keyCode === 9);
+
+            if (isEnter || isTab) {
+                const pos = editor.selectionStart;
+                const text = editor.value;
+                
+                // Get exact text slice leading directly up to the cursor position
+                const textUpToCursor = text.substring(0, pos);
+
+                const snippets = {
+                    'html': {
+                        ext: '.html',
+                        code: `<!DOCTYPE html>\n<html lang="en">\n<head>\n    <meta charset="UTF-8">\n    <meta name="viewport" content="width=device-width, initial-scale=1.0">\n    <title>Document</title>\n</head>\n<body>\n    \n</body>\n</html>`,
+                        cursorTarget: '<body>\n    '
+                    },
+                    'cpp': {
+                        ext: '.cpp',
+                        code: `#include <iostream>\nusing namespace std;\n\nint main() {\n    \n    return 0;\n}`,
+                        cursorTarget: 'int main() {\n    '
+                    },
+                    'java': {
+                        ext: '.java',
+                        code: `public class Main {\n    public static void main(String[] args) {\n        \n    }\n}`,
+                        cursorTarget: 'main(String[] args) {\n        '
+                    },
+                    'py': {
+                        ext: '.py',
+                        code: `def main():\n    \n\nif __name__ == "__main__":\n    main()`,
+                        cursorTarget: 'def main():\n    '
+                    },
+                    'js': {
+                        ext: '.js',
+                        code: `// JavaScript Main Execution\nfunction main() {\n    \n}\n\nmain();`,
+                        cursorTarget: 'function main() {\n    '
+                    }
+                };
+
+                let targetSnippet = null;
+                let matchedTriggerLength = 0;
+
+                // Match regex precisely at the end of the cursor text slice
+                const htmlMatch = textUpToCursor.match(/!\s*$/);
+                const mainMatch = textUpToCursor.match(/main\s*$/i);
+
+                if (htmlMatch) {
+                    targetSnippet = snippets['html'];
+                    matchedTriggerLength = htmlMatch[0].length;
+                } else if (mainMatch) {
+                    matchedTriggerLength = mainMatch[0].length;
+                    const currentExt = select.value;
+
+                    // Match based on current language choice or route to dynamic switches
+                    if (currentExt === '.py') {
+                        targetSnippet = snippets['py'];
+                    } else if (currentExt === '.js' || currentExt === '.ts' || currentExt === '.jsx' || currentExt === '.tsx') {
+                        targetSnippet = snippets['js'];
+                    } else if (currentExt === '.java') {
+                        targetSnippet = snippets['java'];
+                    } else {
+                        // Fallback/Default programming standard
+                        targetSnippet = snippets['cpp'];
+                    }
+                }
+
+                // Inject boilerplate if target conditions met smoothly
+                if (targetSnippet && matchedTriggerLength > 0) {
+                    e.preventDefault();
+                    
+                    // Direct dynamic synchronizer for language configurations
+                    select.value = targetSnippet.ext;
+
+                    const startText = text.substring(0, pos - matchedTriggerLength);
+                    const endText = text.substring(pos);
+                    
+                    editor.value = startText + targetSnippet.code + endText;
+
+                    const snippetIndex = targetSnippet.code.indexOf(targetSnippet.cursorTarget);
+                    const newCursorPos = startText.length + snippetIndex + targetSnippet.cursorTarget.length;
+                    
+                    editor.setSelectionRange(newCursorPos, newCursorPos);
+                    showToast(`${targetSnippet.ext.toUpperCase()} Boilerplate loaded!`);
+                    return;
+                }
+
+                if (isTab) {
+                    e.preventDefault();
+                    const startText = text.substring(0, pos);
+                    const endText = text.substring(editor.selectionEnd);
+                    editor.value = startText + "    " + endText;
+                    editor.setSelectionRange(pos + 4, pos + 4);
+                }
+            }
+        });
+    }
+
+    function triggerFileToEdit() {
+        document.getElementById('editFileInput').click();
+    }
+
+    function loadFileToEdit(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const lastDotIndex = file.name.lastIndexOf('.');
+        let filename = file.name;
+        let ext = '.txt';
+
+        if (lastDotIndex !== -1) {
+            filename = file.name.substring(0, lastDotIndex);
+            ext = file.name.substring(lastDotIndex).toLowerCase();
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('codeEditor').value = e.target.result;
+            document.getElementById('filename').value = filename;
+            setDropdownExtension(ext);
+            showToast("File loaded into workspace!");
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    function setDropdownExtension(ext) {
+        const select = document.getElementById('extension');
+        let optionExists = false;
+        for (let i = 0; i < select.options.length; i++) {
+            if (select.options[i].value === ext) {
+                select.selectedIndex = i;
+                optionExists = true;
+                break;
+            }
+        }
+        if(!optionExists) {
+            const newOpt = document.createElement('option');
+            newOpt.value = ext;
+            newOpt.textContent = `${ext} (Custom)`;
+            select.appendChild(newOpt);
+            select.value = ext;
+        }
+    }
+
+    function loadLogToEditor(id) {
+        const target = historyData.find(x => x.id === id);
+        if (!target) return;
+
+        document.getElementById('codeEditor').value = target.code;
+        document.getElementById('filename').value = target.filename;
+        setDropdownExtension(target.ext);
+        showToast("Loaded from history logs!");
+    }
+
+    function downloadFile() {
+        const code = document.getElementById('codeEditor').value;
+        let filename = document.getElementById('filename').value.trim() || "untitled";
+        const ext = document.getElementById('extension').value;
+
+        if(!code.trim()) { showToast("Workspace is empty!", true); return; }
+
+        triggerDownload(filename, ext, code);
+        addLog(filename, ext, code, "Downloaded");
+        showToast("File downloaded successfully!");
+    }
+
+    function createSnapshot() {
+        const code = document.getElementById('codeEditor').value;
+        let filename = document.getElementById('filename').value.trim() || "untitled";
+        const ext = document.getElementById('extension').value;
+
+        if(!code.trim()) { showToast("Editor canvas is empty!", true); return; }
+
+        addLog(filename, ext, code, "Snapshot");
+        showToast("Snapshot saved locally!");
+    }
+
+    function triggerDownload(name, extension, content) {
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = name + extension;
+        link.click();
+        URL.revokeObjectURL(link.href);
+    }
+
+    function addLog(name, ext, code, type) {
+        const log = {
+            id: Date.now(),
+            filename: name,
+            ext: ext,
+            code: code,
+            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+            type: type
+        };
+        historyData.unshift(log);
+        saveState();
+        renderHistory();
+    }
+
+    function renderHistory() {
+        const container = document.getElementById('historyList');
+        container.innerHTML = "";
+        if(!historyData.length) {
+            container.innerHTML = `<div class="empty-state">No operation logs.</div>`;
+            return;
+        }
+        historyData.forEach(item => {
+            const div = document.createElement('div');
+            div.className = "history-item";
+            div.innerHTML = `
+                <div class="history-info" onclick="loadLogToEditor(${item.id})" title="Click to load in editor">
+                    <div class="history-name">${item.filename}${item.ext}<span class="history-tag">${item.type}</span></div>
+                    <div class="history-time">${item.time} • <i>Click to edit</i></div>
+                </div>
+                <div class="history-controls">
+                    <button class="btn-icon btn-dl-item" onclick="triggerDownloadFromItem(${item.id})" title="Download directly">📥</button>
+                    <button class="btn-icon btn-del-item" onclick="deleteLog(${item.id})" title="Delete log">❌</button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function triggerDownloadFromItem(id) {
+        const target = historyData.find(x => x.id === id);
+        if(target) triggerDownload(target.filename, target.ext, target.code);
+    }
+
+    function deleteLog(id) {
+        if(confirm("Remove this log?")) {
+            historyData = historyData.filter(x => x.id !== id);
+            saveState();
+            renderHistory();
+            showToast("Log entry removed.");
+        }
+    }
+
+    function saveState() { localStorage.setItem('cs_pwa_logs', JSON.stringify(historyData)); }
+    function loadHistory() {
+        const data = localStorage.getItem('cs_pwa_logs');
+        if(data) historyData = JSON.parse(data);
+        renderHistory();
+    }
+
+    function exportBackup() {
+        if(!historyData.length) { showToast("No logs to export!", true); return; }
+        triggerDownload("codesaver_backup_" + Date.now(), ".json", JSON.stringify(historyData));
+        showToast("Backup exported!");
+    }
+
+    document.getElementById('installApp').addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') document.getElementById('installApp').style.display = 'none';
+            deferredPrompt = null;
+        }
+    });
+</script>
+</body>
+</html>
